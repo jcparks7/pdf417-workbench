@@ -615,12 +615,6 @@ def index():
 def encode_barcode():
     data = request.get_json(force=True)
     text = data.get("text", "")
-
-    # Browser textareas normalize all line endings to \n, silently stripping \r.
-    # Restore proper \r\n (CRLF) before encoding so the scanner outputs line
-    # endings exactly as the original text intended.
-    text = text.replace('\r\n', '\n').replace('\r', '\n').replace('\n', '\r\n')
-
     scale = max(1, min(int(data.get("scale", 5)), 12))
     ratio = max(1, min(int(data.get("ratio", 3)), 8))
 
