@@ -84,7 +84,23 @@ environment:
             target: ""
     compose_file_path: ""
 execution:
-    apps: []
+    apps:
+        - name: PDF Encoder
+          type: custom
+          class: webapp
+          start_command: cd /project/code && PROXY_PREFIX=$PROXY_PREFIX python3 app.py
+          health_check_command: curl --fail http://localhost:8888/
+          stop_command: pkill -f '^python3 app.py'
+          user_msg: ""
+          logfile_path: ""
+          timeout_seconds: 90
+          icon_url: ""
+          webapp_options:
+            autolaunch: true
+            port: "8888"
+            proxy:
+                trim_prefix: false
+            url: http://localhost:8888/
     resources:
         gpu:
             requested: 0
