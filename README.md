@@ -65,3 +65,16 @@ To stop the app: docker stop pdf417
 To start it again: docker start pdf417
 To see if it's running: docker ps
 To see its logs: docker logs pdf417
+
+
+Your workflow for updates going forward:
+bashcd /home/jparks/nvidia-workbench/pdf417-workbench
+
+# 1. Edit app.py however you like
+
+# 2. Rebuild the image
+docker build -t pdf417 .
+
+# 3. Swap the running container
+docker stop pdf417 && docker rm pdf417
+docker run -d -p 8888:8888 --restart unless-stopped --name pdf417 pdf417
