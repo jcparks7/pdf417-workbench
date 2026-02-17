@@ -20,41 +20,16 @@ air-gap data transfer to your isolated machine.
 
 ---
 
-## Setup
+### 1. Launch the app
 
-### 1. Extract the zip to the right place
+docker run -d \
+  -p 8888:8888 \
+  -v /home/jparks/nvidia-workbench/pdf417-workbench:/project \
+  --restart unless-stopped \
+  --name pdf417 \
+  python:3.11-slim \
+  bash -c "pip install flask pdf417gen pillow -q && python3 /project/code/app.py"
 
-```bash
-cd /home/jparks/nvidia-workbench/
-unzip pdf417-workbench.zip
-# Folder will be: /home/jparks/nvidia-workbench/pdf417-workbench/
-```
-
-### 2. Initialize as a Git repo (required by AI Workbench)
-
-```bash
-cd /home/jparks/nvidia-workbench/pdf417-workbench
-git init
-git add .
-git commit -m "Initial commit: PDF417 encoder"
-```
-
-### 3. Open in AI Workbench
-
-- Open the AI Workbench desktop app
-- Select **Local** on the My Locations screen
-- Click **Open Local Project** (or Add Existing)
-- Browse to: `/home/jparks/nvidia-workbench/pdf417-workbench`
-- Workbench detects `.project/spec.yaml` and registers the project
-
-### 4. Build
-
-Workbench will build the container and run `postBuild.bash` automatically,
-which installs `flask`, `pdf417gen`, and `pillow`.
-
-### 5. Launch the app
-
-Go to **Environment → Applications → PDF417 Encoder → Start**
 
 ### 6. Access from isolated machine
 
@@ -79,25 +54,14 @@ Find Sparky's IP with: `hostname -I`
 
 ---
 
-## Reassembly script (run on isolated machine)
 
-```python
-import re
+The app is now running as a Docker container on Sparky, completely independent of AI Workbench. Your isolated machine can reach it at http://192.168.1.218:8888 any time it wants.
+What Workbench was doing wrong for your use case — Workbench is designed for a developer sitting at Sparky using its own browser. It deliberately proxies all web apps through its own internal URL (localhost:10000/...) rather than exposing ports directly to the LAN. That's great for development workflows but completely incompatible with what you need — a LAN-accessible web server reachable from a separate machine.
+What Docker does differently — the -p 8888:8888 flag directly bridges Sparky's LAN port 8888 to the container's port 8888, so any machine on the network can reach it.
+The --restart unless-stopped flag means the container will automatically come back up if Sparky reboots, so you don't have to manually start it each time.
+A few things worth knowing going forward:
 
-# Paste decoded barcode strings here, one per line
-raw_scans = [
-    "[001/003] First chunk of text...",
-    "[002/003] Second chunk...",
-    "[003/003] Final chunk.",
-]
-
-chunks = {}
-for scan in raw_scans:
-    m = re.match(r'\[(\d+)/(\d+)\] (.*)', scan, re.DOTALL)
-    if m:
-        idx, payload = int(m.group(1)), m.group(3)
-        chunks[idx] = payload
-
-result = ''.join(chunks[k] for k in sorted(chunks))
-print(result)
-```
+To stop the app: docker stop pdf417
+To start it again: docker start pdf417
+To see if it's running: docker ps
+To see its logs: docker logs pdf417
