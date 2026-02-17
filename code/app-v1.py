@@ -66,6 +66,22 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       flex-direction: column;
     }
 
+    /* ─── scanline overlay ─── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 3px,
+        rgba(0,0,0,0.18) 3px,
+        rgba(0,0,0,0.18) 4px
+      );
+      pointer-events: none;
+      z-index: 999;
+    }
+
     header {
       border-bottom: 1px solid var(--border);
       padding: 18px 32px;
@@ -328,12 +344,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     }
 
     .barcode-card-body {
-      padding: 32px;
+      padding: 20px;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: #ffffff;
-      border-top: 1px solid #e0e0e0;
+      background: #fff;
     }
 
     .barcode-card-body img {
@@ -425,7 +440,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     <div class="settings-row">
       <div class="field">
         <label>Scale (px/module)</label>
-        <input type="number" id="scale" value="5" min="1" max="12" />
+        <input type="number" id="scale" value="3" min="1" max="6" />
       </div>
       <div class="field">
         <label>Barcode Ratio (h/w)</label>
@@ -615,7 +630,7 @@ def index():
 def encode_barcode():
     data = request.get_json(force=True)
     text = data.get("text", "")
-    scale = max(1, min(int(data.get("scale", 5)), 12))
+    scale = max(1, min(int(data.get("scale", 3)), 6))
     ratio = max(1, min(int(data.get("ratio", 3)), 8))
 
     if not text:
