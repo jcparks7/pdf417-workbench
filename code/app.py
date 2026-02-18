@@ -1,9 +1,7 @@
 from flask import Flask, request, jsonify
-import pdf417gen
 import qrcode
 import io
 import base64
-import math
 from PIL import Image
 
 app = Flask(__name__)
@@ -13,19 +11,19 @@ HTML = """<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Barcode Encoder</title>
+<title>QR Encoder</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Chakra+Petch:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg:       #0a0c10;
-    --surface:  #111520;
-    --border:   #1e2a40;
-    --accent:   #00f0a0;
-    --accent2:  #0086ff;
-    --danger:   #ff4060;
-    --text:     #c8d8e8;
-    --muted:    #4a6080;
+    --bg:        #0a0c10;
+    --surface:   #111520;
+    --border:    #1e2a40;
+    --accent:    #00f0a0;
+    --accent2:   #0086ff;
+    --danger:    #ff4060;
+    --text:      #c8d8e8;
+    --muted:     #4a6080;
     --font-mono: 'Share Tech Mono', monospace;
     --font-ui:   'Chakra Petch', sans-serif;
   }
@@ -41,7 +39,6 @@ HTML = """<!DOCTYPE html>
     flex-direction: column;
   }
 
-  /* ─── Header ─── */
   header {
     border-bottom: 1px solid var(--border);
     padding: 16px 28px;
@@ -85,16 +82,14 @@ HTML = """<!DOCTYPE html>
     letter-spacing: 0.06em;
   }
 
-  /* ─── Main layout ─── */
   main {
     flex: 1;
     display: grid;
-    grid-template-columns: 400px 1fr;
+    grid-template-columns: 380px 1fr;
     gap: 0;
     overflow: hidden;
   }
 
-  /* ─── Left panel ─── */
   .panel-left {
     border-right: 1px solid var(--border);
     padding: 24px 24px 24px 28px;
@@ -131,7 +126,6 @@ HTML = """<!DOCTYPE html>
   }
   textarea:focus { border-color: var(--accent2); }
 
-  /* Live stats */
   .live-stats {
     font-family: var(--font-mono);
     font-size: 0.72rem;
@@ -141,36 +135,6 @@ HTML = """<!DOCTYPE html>
     margin-top: 6px;
   }
   .live-stats span { color: var(--accent); }
-
-  /* Format toggle */
-  .toggle-group {
-    display: flex;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    overflow: hidden;
-  }
-  .toggle-group input[type="radio"] { display: none; }
-  .toggle-group label {
-    flex: 1;
-    margin: 0;
-    padding: 8px 0;
-    text-align: center;
-    cursor: pointer;
-    font-size: 0.78rem;
-    letter-spacing: 0.1em;
-    color: var(--muted);
-    background: var(--bg);
-    border: none;
-    transition: all 0.18s;
-  }
-  .toggle-group input[type="radio"]:checked + label {
-    background: var(--accent);
-    color: #000;
-    font-weight: 700;
-  }
-
-  /* QR-only options */
-  #qr-options { display: none; }
 
   select {
     width: 100%;
@@ -185,7 +149,6 @@ HTML = """<!DOCTYPE html>
   }
   select:focus { border-color: var(--accent2); }
 
-  /* Chunk size row */
   .chunk-row {
     display: flex;
     align-items: center;
@@ -211,7 +174,6 @@ HTML = """<!DOCTYPE html>
     line-height: 1.4;
   }
 
-  /* Scale slider */
   .slider-row {
     display: flex;
     align-items: center;
@@ -229,7 +191,6 @@ HTML = """<!DOCTYPE html>
     text-align: right;
   }
 
-  /* Buttons */
   .btn {
     width: 100%;
     padding: 11px;
@@ -243,22 +204,13 @@ HTML = """<!DOCTYPE html>
     cursor: pointer;
     transition: all 0.15s;
   }
-  .btn-primary {
-    background: var(--accent);
-    color: #000;
-  }
+  .btn-primary { background: var(--accent); color: #000; }
   .btn-primary:hover { background: #00ffa8; transform: translateY(-1px); }
   .btn-primary:active { transform: translateY(0); }
   .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-  .btn-secondary {
-    background: transparent;
-    color: var(--muted);
-    border: 1px solid var(--border);
-  }
+  .btn-secondary { background: transparent; color: var(--muted); border: 1px solid var(--border); }
   .btn-secondary:hover { color: var(--text); border-color: var(--muted); }
 
-  /* Error box */
   .error-box {
     background: rgba(255,64,96,0.1);
     border: 1px solid var(--danger);
@@ -270,7 +222,6 @@ HTML = """<!DOCTYPE html>
     display: none;
   }
 
-  /* ─── Right panel ─── */
   .panel-right {
     padding: 24px 28px;
     display: flex;
@@ -279,7 +230,6 @@ HTML = """<!DOCTYPE html>
     overflow-y: auto;
   }
 
-  /* Empty state */
   .empty-state {
     flex: 1;
     display: flex;
@@ -298,13 +248,8 @@ HTML = """<!DOCTYPE html>
     gap: 4px;
     opacity: 0.2;
   }
-  .empty-grid div {
-    height: 36px;
-    background: var(--muted);
-    border-radius: 1px;
-  }
+  .empty-grid div { height: 36px; background: var(--muted); border-radius: 1px; }
 
-  /* Progress */
   .progress-wrap {
     display: none;
     flex-direction: column;
@@ -319,8 +264,7 @@ HTML = """<!DOCTYPE html>
     letter-spacing: 0.08em;
   }
   .progress-bar-outer {
-    width: 300px;
-    height: 5px;
+    width: 300px; height: 5px;
     background: var(--border);
     border-radius: 3px;
     overflow: hidden;
@@ -333,7 +277,6 @@ HTML = """<!DOCTYPE html>
     width: 0%;
   }
 
-  /* Results */
   .results-header {
     display: flex;
     align-items: center;
@@ -355,28 +298,16 @@ HTML = """<!DOCTYPE html>
     color: var(--accent);
   }
 
-  /* Nav controls */
   .barcode-nav {
     display: flex;
     align-items: center;
     gap: 12px;
     flex-wrap: wrap;
   }
-  .barcode-nav .btn {
-    width: auto;
-    padding: 8px 20px;
-  }
-  .nav-prev {
-    background: transparent;
-    color: var(--muted);
-    border: 1px solid var(--border);
-  }
+  .barcode-nav .btn { width: auto; padding: 8px 20px; }
+  .nav-prev { background: transparent; color: var(--muted); border: 1px solid var(--border); }
   .nav-prev:hover { color: var(--text); border-color: var(--muted); }
-  .nav-next {
-    background: var(--accent2);
-    color: #fff;
-    border: none;
-  }
+  .nav-next { background: var(--accent2); color: #fff; border: none; }
   .nav-next:hover { background: #0099ff; transform: translateY(-1px); }
 
   .barcode-counter {
@@ -386,20 +317,14 @@ HTML = """<!DOCTYPE html>
   }
   .barcode-counter span { color: var(--accent); }
 
-  /* Barcode display — red is default (scanner-safe background) */
   .barcode-display {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: #ff0000;
+    background: #ffffff;
     border-radius: 4px;
     padding: 32px;
     min-height: 180px;
-    transition: background 0.25s ease;
-  }
-  .barcode-display.white-bg {
-    /* White override — toggle back to standard white background */
-    background: #ffffff;
   }
   .barcode-display img {
     display: block;
@@ -407,30 +332,6 @@ HTML = """<!DOCTYPE html>
     max-width: 100%;
   }
 
-  /* Scanner bg toggle button */
-  .btn-scan-bg {
-    background: transparent;
-    color: var(--muted);
-    border: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.72rem;
-    padding: 7px 14px;
-  }
-  .btn-scan-bg:hover { color: var(--text); border-color: var(--muted); }
-  .btn-scan-bg.active {
-    background: rgba(255,0,0,0.15);
-    border-color: #ff4444;
-    color: #ff6666;
-  }
-  .btn-scan-bg .dot {
-    width: 9px; height: 9px;
-    border-radius: 50%;
-    background: #ff0000;
-    border: 1px solid rgba(255,255,255,0.25);
-    flex-shrink: 0;
-  }
   .seq-label {
     font-family: var(--font-mono);
     font-size: 0.9rem;
@@ -440,7 +341,6 @@ HTML = """<!DOCTYPE html>
     letter-spacing: 0.08em;
   }
 
-  /* ─── Footer ─── */
   footer {
     border-top: 1px solid var(--border);
     padding: 9px 28px;
@@ -454,7 +354,6 @@ HTML = """<!DOCTYPE html>
 
   @media (max-width: 800px) {
     main { grid-template-columns: 1fr; }
-    .panel-right { max-height: none; }
   }
 </style>
 </head>
@@ -467,13 +366,12 @@ HTML = """<!DOCTYPE html>
     <span></span><span></span><span></span>
   </div>
   <div>
-    <h1>Barcode Text Encoder</h1>
-    <p>DGX Spark // Air-gap data transfer via barcode sequence</p>
+    <h1>QR Text Encoder</h1>
+    <p>DGX Spark // Air-gap data transfer via QR code sequence</p>
   </div>
 </header>
 
 <main>
-  <!-- LEFT: Input & settings -->
   <div class="panel-left">
 
     <div>
@@ -486,17 +384,7 @@ HTML = """<!DOCTYPE html>
     </div>
 
     <div>
-      <label>Format</label>
-      <div class="toggle-group">
-        <input type="radio" id="fmt-pdf417" name="format" value="pdf417" checked>
-        <label for="fmt-pdf417">PDF417</label>
-        <input type="radio" id="fmt-qr" name="format" value="qr">
-        <label for="fmt-qr">QR Code</label>
-      </div>
-    </div>
-
-    <div id="qr-options">
-      <label>QR Error Correction</label>
+      <label>Error Correction</label>
       <select id="qr-ecc">
         <option value="L">L — Low (~7% recovery)</option>
         <option value="M" selected>M — Medium (~15% recovery)</option>
@@ -508,8 +396,8 @@ HTML = """<!DOCTYPE html>
     <div>
       <label>Chunk Size (chars)</label>
       <div class="chunk-row">
-        <input type="number" id="chunk-size" value="1180" min="100" max="2800" step="10">
-        <span class="chunk-hint">PDF417 max ~1800<br>QR max ~2800</span>
+        <input type="number" id="chunk-size" value="800" min="100" max="2800" step="10">
+        <span class="chunk-hint">QR max ~2800<br>Recommended: 800</span>
       </div>
     </div>
 
@@ -523,13 +411,12 @@ HTML = """<!DOCTYPE html>
 
     <div class="error-box" id="errorBox"></div>
 
-    <button class="btn btn-primary" id="encodeBtn" onclick="generate()">⬡ Generate Barcodes</button>
+    <button class="btn btn-primary" id="encodeBtn" onclick="generate()">&#x2B21; Generate QR Codes</button>
     <button class="btn btn-secondary" onclick="clearAll()">Clear</button>
 
   </div>
 
-  <!-- RIGHT: Output -->
-  <div class="panel-right" id="rightPanel">
+  <div class="panel-right">
 
     <div class="empty-state" id="emptyState">
       <div class="empty-grid">
@@ -540,7 +427,7 @@ HTML = """<!DOCTYPE html>
         <div></div><div></div><div></div><div></div>
         <div></div><div></div><div></div><div></div>
       </div>
-      <span>Barcodes will appear here</span>
+      <span>QR codes will appear here</span>
     </div>
 
     <div class="progress-wrap" id="progressWrap">
@@ -553,18 +440,15 @@ HTML = """<!DOCTYPE html>
     <div id="resultsSection" style="display:none; flex-direction:column; gap:18px;">
       <div class="results-header">
         <span class="results-title">Generated Sequence</span>
-        <span class="badge" id="totalBadge">0 barcodes</span>
+        <span class="badge" id="totalBadge">0 codes</span>
       </div>
       <div class="barcode-nav">
         <button class="btn nav-prev" onclick="prevBarcode()">&#8592; Prev</button>
-        <span class="barcode-counter">Barcode <span id="cur-idx">1</span> of <span id="total-count">1</span></span>
+        <span class="barcode-counter">Code <span id="cur-idx">1</span> of <span id="total-count">1</span></span>
         <button class="btn nav-next" onclick="nextBarcode()">Next &#8594;</button>
-        <button class="btn btn-scan-bg active" id="bgToggleBtn" onclick="toggleScanBg()" title="Red background is invisible to scanner lasers (650-680nm) but visible to human eyes">
-          <span class="dot"></span> White BG
-        </button>
       </div>
-      <div class="barcode-display" id="barcodeDisplay">  <!-- red by default -->
-        <img id="barcode-img" src="" alt="barcode">
+      <div class="barcode-display">
+        <img id="barcode-img" src="" alt="QR code">
       </div>
       <div class="seq-label" id="seq-label"></div>
     </div>
@@ -573,103 +457,89 @@ HTML = """<!DOCTYPE html>
 </main>
 
 <footer>
-  <span id="footer-format">PDF417 // security level 2</span>
-  <span id="footer-chunk">chunk size: 1180 chars</span>
-  <span>format: PNG base64</span>
+  <span>QR Code // <span id="footer-ecc">ECC M</span></span>
+  <span>chunk size: <span id="footer-chunk">800</span> chars</span>
+  <span>format: PNG</span>
   <span>sparky // 192.168.1.218:8888</span>
 </footer>
 
 <script>
-  let barcodes = [];
+  let barcodes  = [];
   let currentIdx = 0;
 
-  // ── Live stats update ──
-  const inputText  = document.getElementById('inputText');
-  const charCountEl = document.getElementById('charCount');
+  const inputText    = document.getElementById('inputText');
+  const charCountEl  = document.getElementById('charCount');
   const chunkCountEl = document.getElementById('chunkCount');
 
   function getChunkSize() {
-    return parseInt(document.getElementById('chunk-size').value) || 1180;
+    return parseInt(document.getElementById('chunk-size').value) || 800;
   }
 
   inputText.addEventListener('input', updateLiveStats);
   document.getElementById('chunk-size').addEventListener('input', updateLiveStats);
 
   function updateLiveStats() {
-    const text = inputText.value;
-    const cs = getChunkSize();
-    charCountEl.textContent = text.length.toLocaleString();
-    chunkCountEl.textContent = text.length > 0 ? Math.ceil(text.length / cs) : 0;
+    const len = inputText.value.length;
+    const cs  = getChunkSize();
+    charCountEl.textContent  = len.toLocaleString();
+    chunkCountEl.textContent = len > 0 ? Math.ceil(len / cs) : 0;
   }
 
-  // ── Scale slider ──
   const scaleSlider = document.getElementById('scale');
-  const scaleValEl = document.getElementById('scale-val');
-  scaleSlider.addEventListener('input', () => { scaleValEl.textContent = scaleSlider.value; });
-
-  // ── Format toggle ──
-  document.querySelectorAll('input[name="format"]').forEach(r => {
-    r.addEventListener('change', () => {
-      const isQR = r.value === 'qr';
-      document.getElementById('qr-options').style.display = isQR ? 'block' : 'none';
-      const chunkInput = document.getElementById('chunk-size');
-      if (isQR && parseInt(chunkInput.value) > 800) chunkInput.value = 800;
-      if (!isQR && parseInt(chunkInput.value) < 1180) chunkInput.value = 1180;
-      updateLiveStats();
-    });
+  scaleSlider.addEventListener('input', () => {
+    document.getElementById('scale-val').textContent = scaleSlider.value;
   });
 
-  // ── Generate ──
   async function generate() {
     const text = inputText.value.trim();
     if (!text) { showError('Please paste some text first.'); return; }
     hideError();
 
-    const format = document.querySelector('input[name="format"]:checked').value;
     const chunkSize = getChunkSize();
-    const scale = parseInt(scaleSlider.value);
-    const qrEcc = document.getElementById('qr-ecc').value;
+    const scale     = parseInt(scaleSlider.value);
+    const qrEcc     = document.getElementById('qr-ecc').value;
 
     const btn = document.getElementById('encodeBtn');
     btn.disabled = true;
 
-    // Show progress
-    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('emptyState').style.display     = 'none';
     document.getElementById('resultsSection').style.display = 'none';
     const progressWrap = document.getElementById('progressWrap');
     progressWrap.style.display = 'flex';
-    document.getElementById('progressBar').style.width = '0%';
-    document.getElementById('progressLabel').textContent = 'Sending request...';
+    document.getElementById('progressBar').style.width    = '0%';
+    document.getElementById('progressLabel').textContent  = 'Sending request...';
 
     try {
       const resp = await fetch('/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, format, chunk_size: chunkSize, scale, qr_ecc: qrEcc })
+        body: JSON.stringify({ text, chunk_size: chunkSize, scale, qr_ecc: qrEcc })
       });
       const data = await resp.json();
-      if (data.error) { showError(data.error); progressWrap.style.display = 'none'; return; }
+      if (data.error) {
+        showError(data.error);
+        progressWrap.style.display = 'none';
+        return;
+      }
 
-      barcodes = data.barcodes;
+      barcodes   = data.barcodes;
       currentIdx = 0;
 
-      document.getElementById('progressBar').style.width = '100%';
+      document.getElementById('progressBar').style.width   = '100%';
       document.getElementById('progressLabel').textContent =
-        `Done — ${barcodes.length} barcode${barcodes.length !== 1 ? 's' : ''} generated`;
+        `Done — ${barcodes.length} code${barcodes.length !== 1 ? 's' : ''} generated`;
 
       setTimeout(() => {
         progressWrap.style.display = 'none';
         const rs = document.getElementById('resultsSection');
         rs.style.display = 'flex';
         document.getElementById('totalBadge').textContent =
-          `${barcodes.length} barcode${barcodes.length !== 1 ? 's' : ''}`;
+          `${barcodes.length} code${barcodes.length !== 1 ? 's' : ''}`;
         showBarcode(0);
       }, 350);
 
-      // Update footer
-      document.getElementById('footer-format').textContent =
-        format === 'qr' ? `QR Code // ECC ${qrEcc}` : 'PDF417 // security level 2';
-      document.getElementById('footer-chunk').textContent = `chunk size: ${chunkSize} chars`;
+      document.getElementById('footer-ecc').textContent   = `ECC ${qrEcc}`;
+      document.getElementById('footer-chunk').textContent = chunkSize;
 
     } catch (e) {
       showError('Request failed: ' + e.message);
@@ -682,60 +552,39 @@ HTML = """<!DOCTYPE html>
   function showBarcode(idx) {
     if (!barcodes.length) return;
     const b = barcodes[idx];
-    document.getElementById('barcode-img').src = 'data:image/png;base64,' + b.image;
-    document.getElementById('seq-label').textContent = b.header;
-    document.getElementById('cur-idx').textContent = idx + 1;
-    document.getElementById('total-count').textContent = barcodes.length;
+    document.getElementById('barcode-img').src            = 'data:image/png;base64,' + b.image;
+    document.getElementById('seq-label').textContent      = b.header;
+    document.getElementById('cur-idx').textContent        = idx + 1;
+    document.getElementById('total-count').textContent    = barcodes.length;
   }
 
   function prevBarcode() {
     if (currentIdx > 0) { currentIdx--; showBarcode(currentIdx); }
   }
-
   function nextBarcode() {
     if (currentIdx < barcodes.length - 1) { currentIdx++; showBarcode(currentIdx); }
   }
 
-  // Keyboard navigation
   document.addEventListener('keydown', e => {
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextBarcode();
     if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   prevBarcode();
   });
 
-  // ── Clear ──
   function clearAll() {
-    inputText.value = '';
+    inputText.value          = '';
     charCountEl.textContent  = '0';
     chunkCountEl.textContent = '0';
-    barcodes = [];
-    currentIdx = 0;
+    barcodes                 = [];
+    currentIdx               = 0;
     document.getElementById('resultsSection').style.display = 'none';
     document.getElementById('progressWrap').style.display   = 'none';
     document.getElementById('emptyState').style.display     = 'flex';
     hideError();
   }
 
-  // ── Scanner background toggle ──
-  // Red is the default (scanner-safe). Toggle switches to white and back.
-  let redBgActive = true;
-  function toggleScanBg() {
-    redBgActive = !redBgActive;
-    const display = document.getElementById('barcodeDisplay');
-    const btn     = document.getElementById('bgToggleBtn');
-    if (redBgActive) {
-      display.classList.remove('white-bg');
-      btn.classList.add('active');
-      btn.innerHTML = '<span class="dot"></span> White BG';
-    } else {
-      display.classList.add('white-bg');
-      btn.classList.remove('active');
-      btn.innerHTML = '<span class="dot"></span> Red BG';
-    }
-  }
-
   function showError(msg) {
     const box = document.getElementById('errorBox');
-    box.textContent = msg;
+    box.textContent   = msg;
     box.style.display = 'block';
   }
   function hideError() {
@@ -765,40 +614,6 @@ def chunk_text(text, chunk_size):
     return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
 
 
-def make_transparent(img):
-    """Convert a black-on-white PIL image to black-on-transparent RGBA PNG."""
-    img = img.convert('RGBA')
-    pixels = img.load()
-    for y in range(img.height):
-        for x in range(img.width):
-            r, g, b, a = pixels[x, y]
-            # Treat near-white pixels as transparent background
-            if r > 200 and g > 200 and b > 200:
-                pixels[x, y] = (255, 255, 255, 0)
-    return img
-
-
-def encode_pdf417(payload, scale):
-    # PDF417 max is 90 rows and 30 columns. Start at 6 columns and increase
-    # until the barcode fits, rather than failing with a cryptic row-count error.
-    last_err = None
-    for columns in range(6, 31):
-        try:
-            codes = pdf417gen.encode(payload, security_level=2, columns=columns)
-            img = pdf417gen.render_image(codes, scale=scale, ratio=3, padding=20)
-            img = make_transparent(img)
-            buf = io.BytesIO()
-            img.save(buf, format='PNG')
-            return base64.b64encode(buf.getvalue()).decode()
-        except Exception as e:
-            last_err = e
-            continue
-    raise ValueError(
-        f"PDF417 could not fit this chunk even at 30 columns. "
-        f"Try reducing the chunk size. (Last error: {last_err})"
-    )
-
-
 def encode_qr(payload, scale, ecc_level):
     ecc = ECC_MAP.get(ecc_level, qrcode.constants.ERROR_CORRECT_M)
     qr = qrcode.QRCode(
@@ -808,8 +623,7 @@ def encode_qr(payload, scale, ecc_level):
     )
     qr.add_data(payload.encode('utf-8'))
     qr.make(fit=True)
-    img = qr.make_image(fill_color='black', back_color='white')
-    img = make_transparent(img.convert('RGB'))
+    img = qr.make_image(fill_color='black', back_color='white').convert('RGB')
     buf = io.BytesIO()
     img.save(buf, format='PNG')
     return base64.b64encode(buf.getvalue()).decode()
@@ -822,41 +636,28 @@ def index():
 
 @app.route('/generate', methods=['POST'])
 def generate():
-    data = request.get_json()
-    text = data.get('text', '')
-    fmt = data.get('format', 'pdf417').lower()
-    chunk_size = int(data.get('chunk_size', 1180))
-    scale = int(data.get('scale', 4))
-    qr_ecc = data.get('qr_ecc', 'M')
+    data       = request.get_json()
+    text       = data.get('text', '')
+    chunk_size = int(data.get('chunk_size', 800))
+    scale      = int(data.get('scale', 4))
+    qr_ecc     = data.get('qr_ecc', 'M')
 
     if not text:
         return jsonify({'error': 'No text provided'})
 
-    # Clamp chunk size to reasonable bounds
-    if fmt == 'qr':
-        chunk_size = max(50, min(chunk_size, 2800))
-    else:
-        chunk_size = max(50, min(chunk_size, 1800))
-
-    # Normalize line endings before encoding
-    text = normalize_line_endings(text)
-
-    chunks = chunk_text(text, chunk_size)
-    total = len(chunks)
+    chunk_size = max(50, min(chunk_size, 2800))
+    text       = normalize_line_endings(text)
+    chunks     = chunk_text(text, chunk_size)
+    total      = len(chunks)
 
     results = []
     for i, chunk in enumerate(chunks):
-        header = f'[{i+1:03d}/{total:03d}]'
+        header  = f'[{i+1:03d}/{total:03d}]'
         payload = header + chunk
-
         try:
-            if fmt == 'qr':
-                img_b64 = encode_qr(payload, scale, qr_ecc)
-            else:
-                img_b64 = encode_pdf417(payload, scale)
+            img_b64 = encode_qr(payload, scale, qr_ecc)
         except Exception as e:
             return jsonify({'error': f'Encoding failed on chunk {i+1}: {str(e)}'})
-
         results.append({'header': header, 'image': img_b64})
 
     return jsonify({'barcodes': results})
