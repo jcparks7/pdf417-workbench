@@ -395,42 +395,11 @@ HTML = """<!DOCTYPE html>
     border-radius: 4px;
     padding: 32px;
     min-height: 180px;
-    transition: background 0.25s ease;
-  }
-  .barcode-display.red-bg {
-    /* Pure red (R:255 G:0 B:0) reflects 650-680nm scanner laser like white does,
-       making the background invisible to the sensor while remaining visible to humans. */
-    background: #ff0000;
   }
   .barcode-display img {
     display: block;
     image-rendering: pixelated;
     max-width: 100%;
-  }
-
-  /* Scanner bg toggle button */
-  .btn-scan-bg {
-    background: transparent;
-    color: var(--muted);
-    border: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.72rem;
-    padding: 7px 14px;
-  }
-  .btn-scan-bg:hover { color: var(--text); border-color: var(--muted); }
-  .btn-scan-bg.active {
-    background: rgba(255,0,0,0.15);
-    border-color: #ff4444;
-    color: #ff6666;
-  }
-  .btn-scan-bg .dot {
-    width: 9px; height: 9px;
-    border-radius: 50%;
-    background: #ff0000;
-    border: 1px solid rgba(255,255,255,0.25);
-    flex-shrink: 0;
   }
   .seq-label {
     font-family: var(--font-mono);
@@ -560,11 +529,8 @@ HTML = """<!DOCTYPE html>
         <button class="btn nav-prev" onclick="prevBarcode()">&#8592; Prev</button>
         <span class="barcode-counter">Barcode <span id="cur-idx">1</span> of <span id="total-count">1</span></span>
         <button class="btn nav-next" onclick="nextBarcode()">Next &#8594;</button>
-        <button class="btn btn-scan-bg" id="bgToggleBtn" onclick="toggleScanBg()" title="Red background is invisible to scanner lasers (650-680nm) but visible to human eyes">
-          <span class="dot"></span> Scanner BG
-        </button>
       </div>
-      <div class="barcode-display" id="barcodeDisplay">
+      <div class="barcode-display">
         <img id="barcode-img" src="" alt="barcode">
       </div>
       <div class="seq-label" id="seq-label"></div>
@@ -714,23 +680,6 @@ HTML = """<!DOCTYPE html>
     document.getElementById('progressWrap').style.display   = 'none';
     document.getElementById('emptyState').style.display     = 'flex';
     hideError();
-  }
-
-  // ── Scanner background toggle ──
-  let redBgActive = false;
-  function toggleScanBg() {
-    redBgActive = !redBgActive;
-    const display = document.getElementById('barcodeDisplay');
-    const btn     = document.getElementById('bgToggleBtn');
-    if (redBgActive) {
-      display.classList.add('red-bg');
-      btn.classList.add('active');
-      btn.innerHTML = '<span class="dot"></span> Red BG: ON';
-    } else {
-      display.classList.remove('red-bg');
-      btn.classList.remove('active');
-      btn.innerHTML = '<span class="dot"></span> Scanner BG';
-    }
   }
 
   function showError(msg) {
