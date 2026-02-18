@@ -765,23 +765,9 @@ def chunk_text(text, chunk_size):
     return [text[i:i + chunk_size] for i in range(0, len(text), chunk_size)]
 
 
-def make_transparent(img):
-    """Convert a black-on-white PIL image to black-on-transparent RGBA PNG."""
-    img = img.convert('RGBA')
-    pixels = img.load()
-    for y in range(img.height):
-        for x in range(img.width):
-            r, g, b, a = pixels[x, y]
-            # Treat near-white pixels as transparent background
-            if r > 200 and g > 200 and b > 200:
-                pixels[x, y] = (255, 255, 255, 0)
-    return img
-
-
 def encode_pdf417(payload, scale):
     codes = pdf417gen.encode(payload, security_level=2, columns=6)
     img = pdf417gen.render_image(codes, scale=scale, ratio=3, padding=20)
-    img = make_transparent(img)
     buf = io.BytesIO()
     img.save(buf, format='PNG')
     return base64.b64encode(buf.getvalue()).decode()
@@ -796,8 +782,7 @@ def encode_qr(payload, scale, ecc_level):
     )
     qr.add_data(payload.encode('utf-8'))
     qr.make(fit=True)
-    img = qr.make_image(fill_color='black', back_color='white')
-    img = make_transparent(img.convert('RGB'))
+    img = qr.make_image(fill_color='black', back_color='white').convert('RGB')
     buf = io.BytesIO()
     img.save(buf, format='PNG')
     return base64.b64encode(buf.getvalue()).decode()
