@@ -386,21 +386,20 @@ HTML = """<!DOCTYPE html>
   }
   .barcode-counter span { color: var(--accent); }
 
-  /* Barcode display */
+  /* Barcode display — red is default (scanner-safe background) */
   .barcode-display {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: #fff;
+    background: #ff0000;
     border-radius: 4px;
     padding: 32px;
     min-height: 180px;
     transition: background 0.25s ease;
   }
-  .barcode-display.red-bg {
-    /* Pure red (R:255 G:0 B:0) reflects 650-680nm scanner laser like white does,
-       making the background invisible to the sensor while remaining visible to humans. */
-    background: #ff0000;
+  .barcode-display.white-bg {
+    /* White override — toggle back to standard white background */
+    background: #ffffff;
   }
   .barcode-display img {
     display: block;
@@ -560,11 +559,11 @@ HTML = """<!DOCTYPE html>
         <button class="btn nav-prev" onclick="prevBarcode()">&#8592; Prev</button>
         <span class="barcode-counter">Barcode <span id="cur-idx">1</span> of <span id="total-count">1</span></span>
         <button class="btn nav-next" onclick="nextBarcode()">Next &#8594;</button>
-        <button class="btn btn-scan-bg" id="bgToggleBtn" onclick="toggleScanBg()" title="Red background is invisible to scanner lasers (650-680nm) but visible to human eyes">
-          <span class="dot"></span> Scanner BG
+        <button class="btn btn-scan-bg active" id="bgToggleBtn" onclick="toggleScanBg()" title="Red background is invisible to scanner lasers (650-680nm) but visible to human eyes">
+          <span class="dot"></span> White BG
         </button>
       </div>
-      <div class="barcode-display" id="barcodeDisplay">
+      <div class="barcode-display" id="barcodeDisplay">  <!-- red by default -->
         <img id="barcode-img" src="" alt="barcode">
       </div>
       <div class="seq-label" id="seq-label"></div>
@@ -717,19 +716,20 @@ HTML = """<!DOCTYPE html>
   }
 
   // ── Scanner background toggle ──
-  let redBgActive = false;
+  // Red is the default (scanner-safe). Toggle switches to white and back.
+  let redBgActive = true;
   function toggleScanBg() {
     redBgActive = !redBgActive;
     const display = document.getElementById('barcodeDisplay');
     const btn     = document.getElementById('bgToggleBtn');
     if (redBgActive) {
-      display.classList.add('red-bg');
+      display.classList.remove('white-bg');
       btn.classList.add('active');
-      btn.innerHTML = '<span class="dot"></span> Red BG: ON';
+      btn.innerHTML = '<span class="dot"></span> White BG';
     } else {
-      display.classList.remove('red-bg');
+      display.classList.add('white-bg');
       btn.classList.remove('active');
-      btn.innerHTML = '<span class="dot"></span> Scanner BG';
+      btn.innerHTML = '<span class="dot"></span> Red BG';
     }
   }
 
@@ -779,12 +779,24 @@ def make_transparent(img):
 
 
 def encode_pdf417(payload, scale):
-    codes = pdf417gen.encode(payload, security_level=2, columns=6)
-    img = pdf417gen.render_image(codes, scale=scale, ratio=3, padding=20)
-    img = make_transparent(img)
-    buf = io.BytesIO()
-    img.save(buf, format='PNG')
-    return base64.b64encode(buf.getvalue()).decode()
+    # PDF417 max is 90 rows and 30 columns. Start at 6 columns and increase
+    # until the barcode fits, rather than failing with a cryptic row-count error.
+    last_err = None
+    for columns in range(6, 31):
+        try:
+            codes = pdf417gen.encode(payload, security_level=2, columns=columns)
+            img = pdf417gen.render_image(codes, scale=scale, ratio=3, padding=20)
+            img = make_transparent(img)
+            buf = io.BytesIO()
+            img.save(buf, format='PNG')
+            return base64.b64encode(buf.getvalue()).decode()
+        except Exception as e:
+            last_err = e
+            continue
+    raise ValueError(
+        f"PDF417 could not fit this chunk even at 30 columns. "
+        f"Try reducing the chunk size. (Last error: {last_err})"
+    )
 
 
 def encode_qr(payload, scale, ecc_level):
