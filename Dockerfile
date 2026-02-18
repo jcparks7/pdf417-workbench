@@ -4,7 +4,6 @@ WORKDIR /app
 
 RUN pip install --no-cache-dir \
     flask \
-    pdf417gen \
     qrcode[pil] \
     Pillow
 
