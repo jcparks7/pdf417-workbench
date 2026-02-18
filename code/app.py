@@ -26,7 +26,7 @@ def chunk_text(text: str, chunk_size: int = CHUNK_SIZE) -> list[str]:
 
 def text_to_pdf417_b64(payload: str, scale: int = 3, ratio: int = 3) -> str:
     """Encode a string as a PDF417 barcode and return a base64 PNG string."""
-    codes = encode(payload, columns=8, security_level=2)
+    codes = encode(payload, columns=10, security_level=2)
     image = render_image(codes, scale=scale, ratio=ratio, padding=20)
     buffer = io.BytesIO()
     image.save(buffer, format="PNG")
