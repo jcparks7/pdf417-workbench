@@ -603,9 +603,56 @@ ECC_MAP = {
 }
 
 
-def normalize_line_endings(text):
-    """Normalize \n to \r\n so scanned text preserves line breaks in Word."""
-    text = text.replace('\r\n', '\n')
+# Characters that USB HID keyboard emulation commonly mis-outputs.
+# Scanners operate as keyboards and can only type ASCII keystrokes — any
+# multi-byte Unicode character that has no direct key mapping gets dropped
+# or garbled. We normalize known problem characters to their ASCII equivalents
+# before encoding so the scanner only ever outputs plain ASCII.
+UNICODE_TO_ASCII = {
+    # Curly / smart quotes -> straight quotes
+    '‘': "'",   # left single quotation mark
+    '’': "'",   # right single quotation mark (apostrophe)
+    '‚': "'",   # single low-9 quotation mark
+    '‛': "'",   # single high-reversed-9 quotation mark
+    '′': "'",   # prime
+    '‵': "'",   # reversed prime
+    '“': '"',   # left double quotation mark
+    '”': '"',   # right double quotation mark
+    '„': '"',   # double low-9 quotation mark
+    '‟': '"',   # double high-reversed-9 quotation mark
+    '″': '"',   # double prime
+    '‶': '"',   # reversed double prime
+    # Dashes -> hyphens
+    '–': '-',   # en dash
+    '—': '-',   # em dash
+    '―': '-',   # horizontal bar
+    # Ellipsis
+    '…': '...', # horizontal ellipsis
+    # Non-breaking and special spaces -> regular space
+    ' ': ' ',   # non-breaking space
+    ' ': ' ',   # thin space
+    ' ': ' ',   # hair space
+    ' ': ' ',   # narrow no-break space
+    # Bullets and similar
+    '•': '*',   # bullet
+    '‣': '*',   # triangular bullet
+    '⁃': '-',   # hyphen bullet
+}
+
+def normalize_text(text):
+    """Normalize Unicode punctuation to ASCII and fix line endings.
+
+    Scanners in USB HID keyboard mode can only emit standard keyboard
+    keystrokes. Multi-byte Unicode characters like curly quotes have no
+    keyboard equivalent and get mis-output (e.g. apostrophe -> >>).
+    We replace all known offenders with their ASCII equivalents first,
+    then normalize line endings to CRLF so Word receives correct breaks.
+    """
+    # Replace known Unicode characters with ASCII equivalents
+    for uni, asc in UNICODE_TO_ASCII.items():
+        text = text.replace(uni, asc)
+    # Normalize line endings to CRLF
+    text = text.replace('\r\n', '\n').replace('\r', '\n')
     return text.replace('\n', '\r\n')
 
 
@@ -646,7 +693,7 @@ def generate():
         return jsonify({'error': 'No text provided'})
 
     chunk_size = max(50, min(chunk_size, 2800))
-    text       = normalize_line_endings(text)
+    text       = normalize_text(text)
     chunks     = chunk_text(text, chunk_size)
     total      = len(chunks)
 
