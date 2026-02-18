@@ -14,315 +14,457 @@ HTML = """<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Barcode Encoder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Chakra+Petch:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@400;600;700&display=swap');
-
   :root {
-    --bg: #0d0f14;
-    --surface: #161a23;
-    --surface2: #1e2433;
-    --border: #2a3347;
-    --accent: #00e5ff;
-    --accent2: #ff6b35;
-    --text: #c8d6e8;
-    --text-dim: #5a6a80;
-    --success: #00ff88;
-    --radius: 6px;
+    --bg:       #0a0c10;
+    --surface:  #111520;
+    --border:   #1e2a40;
+    --accent:   #00f0a0;
+    --accent2:  #0086ff;
+    --danger:   #ff4060;
+    --text:     #c8d8e8;
+    --muted:    #4a6080;
+    --font-mono: 'Share Tech Mono', monospace;
+    --font-ui:   'Chakra Petch', sans-serif;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    font-family: 'Rajdhani', sans-serif;
     background: var(--bg);
     color: var(--text);
+    font-family: var(--font-ui);
     min-height: 100vh;
-    padding: 24px;
+    display: flex;
+    flex-direction: column;
   }
 
-  h1 {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 1.4rem;
-    letter-spacing: 0.15em;
-    color: var(--accent);
-    text-transform: uppercase;
-    margin-bottom: 24px;
+  /* ─── Header ─── */
+  header {
     border-bottom: 1px solid var(--border);
-    padding-bottom: 12px;
+    padding: 16px 28px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: linear-gradient(90deg, rgba(0,240,160,0.04) 0%, transparent 60%);
   }
 
-  h1 span { color: var(--accent2); }
-
-  .layout {
+  .logo-icon {
+    width: 34px; height: 34px;
     display: grid;
-    grid-template-columns: 340px 1fr;
-    gap: 20px;
-    max-width: 1400px;
+    grid-template-columns: repeat(3,1fr);
+    gap: 3px;
+    flex-shrink: 0;
+  }
+  .logo-icon span {
+    background: var(--accent);
+    border-radius: 1px;
+    animation: blink 2.4s infinite;
+  }
+  .logo-icon span:nth-child(2n) { animation-delay: 0.3s; opacity: 0.5; }
+  .logo-icon span:nth-child(3n) { animation-delay: 0.6s; opacity: 0.75; }
+
+  @keyframes blink {
+    0%,100% { opacity: 1; }
+    50%      { opacity: 0.3; }
   }
 
-  .panel {
+  header h1 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  header p {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+
+  /* ─── Main layout ─── */
+  main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 400px 1fr;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  /* ─── Left panel ─── */
+  .panel-left {
+    border-right: 1px solid var(--border);
+    padding: 24px 24px 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
     background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 20px;
+    overflow-y: auto;
   }
 
   label {
-    display: block;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--text-dim);
-    margin-bottom: 6px;
-    margin-top: 16px;
+    color: var(--muted);
+    display: block;
+    margin-bottom: 7px;
   }
-
-  label:first-child { margin-top: 0; }
 
   textarea {
     width: 100%;
-    height: 200px;
+    min-height: 220px;
+    resize: vertical;
     background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: 4px;
     color: var(--text);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.8rem;
-    padding: 10px;
-    resize: vertical;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    padding: 12px;
+    outline: none;
+    line-height: 1.6;
     transition: border-color 0.2s;
   }
+  textarea:focus { border-color: var(--accent2); }
 
-  textarea:focus { outline: none; border-color: var(--accent); }
+  /* Live stats */
+  .live-stats {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    display: flex;
+    gap: 16px;
+    margin-top: 6px;
+  }
+  .live-stats span { color: var(--accent); }
 
   /* Format toggle */
   .toggle-group {
     display: flex;
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: 4px;
     overflow: hidden;
   }
-
   .toggle-group input[type="radio"] { display: none; }
-
   .toggle-group label {
     flex: 1;
     margin: 0;
     padding: 8px 0;
     text-align: center;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     letter-spacing: 0.1em;
-    color: var(--text-dim);
+    color: var(--muted);
     background: var(--bg);
     border: none;
-    transition: all 0.2s;
+    transition: all 0.18s;
   }
-
   .toggle-group input[type="radio"]:checked + label {
     background: var(--accent);
     color: #000;
     font-weight: 700;
   }
 
-  /* Sliders */
-  .slider-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
+  /* QR-only options */
+  #qr-options { display: none; }
 
-  input[type="range"] {
-    flex: 1;
-    accent-color: var(--accent);
-    height: 4px;
-  }
-
-  .slider-val {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.85rem;
-    color: var(--accent);
-    min-width: 40px;
-    text-align: right;
-  }
-
-  /* Select */
   select {
     width: 100%;
     background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: 4px;
     color: var(--text);
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 0.9rem;
-    padding: 7px 10px;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    padding: 8px 10px;
+    outline: none;
   }
+  select:focus { border-color: var(--accent2); }
 
-  select:focus { outline: none; border-color: var(--accent); }
-
-  /* QR options - hidden by default */
-  #qr-options { display: none; }
-
-  /* Number input for chunk size */
+  /* Chunk size row */
   .chunk-row {
     display: flex;
     align-items: center;
     gap: 10px;
   }
-
   input[type="number"] {
     width: 90px;
     background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: 4px;
     color: var(--accent);
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.9rem;
-    padding: 6px 10px;
+    font-family: var(--font-mono);
+    font-size: 0.88rem;
+    padding: 7px 10px;
     text-align: center;
+    outline: none;
   }
-
-  input[type="number"]:focus { outline: none; border-color: var(--accent); }
-
+  input[type="number"]:focus { border-color: var(--accent2); }
   .chunk-hint {
-    font-size: 0.75rem;
-    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    color: var(--muted);
+    line-height: 1.4;
   }
 
-  button {
+  /* Scale slider */
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  input[type="range"] {
+    flex: 1;
+    accent-color: var(--accent);
+  }
+  .slider-val {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--accent);
+    min-width: 24px;
+    text-align: right;
+  }
+
+  /* Buttons */
+  .btn {
     width: 100%;
-    margin-top: 20px;
-    padding: 12px;
-    background: var(--accent);
-    color: #000;
+    padding: 11px;
     border: none;
-    border-radius: var(--radius);
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 1rem;
+    border-radius: 4px;
+    font-family: var(--font-ui);
+    font-size: 0.82rem;
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
     cursor: pointer;
-    transition: background 0.2s, transform 0.1s;
+    transition: all 0.15s;
   }
-
-  button:hover { background: #00cfea; }
-  button:active { transform: scale(0.98); }
-  button:disabled { background: var(--border); color: var(--text-dim); cursor: default; }
-
-  /* Stats bar */
-  .stats {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.72rem;
-    color: var(--text-dim);
-    margin-top: 12px;
-    line-height: 1.8;
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
   }
+  .btn-primary:hover { background: #00ffa8; transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
 
-  .stats span { color: var(--accent2); }
-
-  /* Right panel - barcodes */
-  .right-panel {
-    background: var(--surface);
+  .btn-secondary {
+    background: transparent;
+    color: var(--muted);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 20px;
-    overflow-y: auto;
-    max-height: calc(100vh - 72px);
+  }
+  .btn-secondary:hover { color: var(--text); border-color: var(--muted); }
+
+  /* Error box */
+  .error-box {
+    background: rgba(255,64,96,0.1);
+    border: 1px solid var(--danger);
+    border-radius: 4px;
+    padding: 9px 13px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--danger);
+    display: none;
   }
 
+  /* ─── Right panel ─── */
+  .panel-right {
+    padding: 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+  }
+
+  /* Empty state */
+  .empty-state {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    letter-spacing: 0.08em;
+  }
+  .empty-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 10px);
+    gap: 4px;
+    opacity: 0.2;
+  }
+  .empty-grid div {
+    height: 36px;
+    background: var(--muted);
+    border-radius: 1px;
+  }
+
+  /* Progress */
+  .progress-wrap {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 40px 0;
+  }
+  .progress-label {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+  .progress-bar-outer {
+    width: 300px;
+    height: 5px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-bar-inner {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 3px;
+    transition: width 0.2s;
+    width: 0%;
+  }
+
+  /* Results */
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .results-title {
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .badge {
+    background: rgba(0,240,160,0.12);
+    border: 1px solid rgba(0,240,160,0.3);
+    border-radius: 100px;
+    padding: 3px 12px;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--accent);
+  }
+
+  /* Nav controls */
   .barcode-nav {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 16px;
     flex-wrap: wrap;
   }
-
-  .barcode-nav button {
+  .barcode-nav .btn {
     width: auto;
-    margin: 0;
     padding: 8px 20px;
-    font-size: 0.8rem;
   }
-
-  .nav-prev { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
-  .nav-prev:hover { background: var(--border); }
-  .nav-next { background: var(--accent2); }
-  .nav-next:hover { background: #ff855a; }
+  .nav-prev {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .nav-prev:hover { color: var(--text); border-color: var(--muted); }
+  .nav-next {
+    background: var(--accent2);
+    color: #fff;
+    border: none;
+  }
+  .nav-next:hover { background: #0099ff; transform: translateY(-1px); }
 
   .barcode-counter {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.85rem;
-    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    color: var(--muted);
   }
+  .barcode-counter span { color: var(--accent); }
 
-  .barcode-counter span { color: var(--success); }
-
+  /* Barcode display */
   .barcode-display {
     display: flex;
     justify-content: center;
     align-items: center;
     background: #fff;
-    border-radius: var(--radius);
+    border-radius: 4px;
     padding: 32px;
-    min-height: 200px;
+    min-height: 180px;
   }
-
   .barcode-display img {
     display: block;
     image-rendering: pixelated;
     max-width: 100%;
   }
-
   .seq-label {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
     color: var(--accent);
     text-align: center;
-    margin-top: 12px;
+    margin-top: 10px;
     letter-spacing: 0.08em;
   }
 
-  .placeholder {
-    color: var(--text-dim);
-    font-size: 0.85rem;
-    text-align: center;
-    padding: 60px 20px;
-  }
-
-  .error-msg {
-    color: #ff4444;
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 0.8rem;
-    margin-top: 8px;
+  /* ─── Footer ─── */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 9px 28px;
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    color: var(--muted);
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
   }
 
   @media (max-width: 800px) {
-    .layout { grid-template-columns: 1fr; }
-    .right-panel { max-height: none; }
+    main { grid-template-columns: 1fr; }
+    .panel-right { max-height: none; }
   }
 </style>
 </head>
 <body>
 
-<h1>Barcode <span>Encoder</span></h1>
+<header>
+  <div class="logo-icon">
+    <span></span><span></span><span></span>
+    <span></span><span></span><span></span>
+    <span></span><span></span><span></span>
+  </div>
+  <div>
+    <h1>Barcode Text Encoder</h1>
+    <p>DGX Spark // Air-gap data transfer via barcode sequence</p>
+  </div>
+</header>
 
-<div class="layout">
-  <!-- Left: controls -->
-  <div class="panel">
-    <label>Paste Text</label>
-    <textarea id="text-input" placeholder="Paste your text here..."></textarea>
+<main>
+  <!-- LEFT: Input & settings -->
+  <div class="panel-left">
 
-    <label>Format</label>
-    <div class="toggle-group">
-      <input type="radio" id="fmt-pdf417" name="format" value="pdf417" checked>
-      <label for="fmt-pdf417">PDF417</label>
-      <input type="radio" id="fmt-qr" name="format" value="qr">
-      <label for="fmt-qr">QR Code</label>
+    <div>
+      <label>Input Text</label>
+      <textarea id="inputText" placeholder="Paste your text here..."></textarea>
+      <div class="live-stats">
+        <div>chars: <span id="charCount">0</span></div>
+        <div>chunks: <span id="chunkCount">0</span></div>
+      </div>
     </div>
 
-    <!-- QR-only options -->
+    <div>
+      <label>Format</label>
+      <div class="toggle-group">
+        <input type="radio" id="fmt-pdf417" name="format" value="pdf417" checked>
+        <label for="fmt-pdf417">PDF417</label>
+        <input type="radio" id="fmt-qr" name="format" value="qr">
+        <label for="fmt-qr">QR Code</label>
+      </div>
+    </div>
+
     <div id="qr-options">
       <label>QR Error Correction</label>
       <select id="qr-ecc">
@@ -333,77 +475,138 @@ HTML = """<!DOCTYPE html>
       </select>
     </div>
 
-    <label>Chunk Size (chars)</label>
-    <div class="chunk-row">
-      <input type="number" id="chunk-size" value="1180" min="100" max="2800" step="10">
-      <span class="chunk-hint">PDF417 max ~1800 · QR max ~2800</span>
+    <div>
+      <label>Chunk Size (chars)</label>
+      <div class="chunk-row">
+        <input type="number" id="chunk-size" value="1180" min="100" max="2800" step="10">
+        <span class="chunk-hint">PDF417 max ~1800<br>QR max ~2800</span>
+      </div>
     </div>
 
-    <label>Scale</label>
-    <div class="slider-row">
-      <input type="range" id="scale" min="1" max="12" value="4">
-      <span class="slider-val" id="scale-val">4</span>
+    <div>
+      <label>Scale (px/module)</label>
+      <div class="slider-row">
+        <input type="range" id="scale" min="1" max="12" value="4">
+        <span class="slider-val" id="scale-val">4</span>
+      </div>
     </div>
 
-    <button id="generate-btn" onclick="generate()">Generate Barcodes</button>
+    <div class="error-box" id="errorBox"></div>
 
-    <div class="stats" id="stats"></div>
-    <div class="error-msg" id="error-msg"></div>
+    <button class="btn btn-primary" id="encodeBtn" onclick="generate()">⬡ Generate Barcodes</button>
+    <button class="btn btn-secondary" onclick="clearAll()">Clear</button>
+
   </div>
 
-  <!-- Right: barcode display -->
-  <div class="right-panel" id="right-panel">
-    <div class="placeholder" id="placeholder">
-      Barcodes will appear here after generation.
+  <!-- RIGHT: Output -->
+  <div class="panel-right" id="rightPanel">
+
+    <div class="empty-state" id="emptyState">
+      <div class="empty-grid">
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+        <div></div><div></div><div></div><div></div>
+      </div>
+      <span>Barcodes will appear here</span>
     </div>
-    <div id="barcode-area" style="display:none">
+
+    <div class="progress-wrap" id="progressWrap">
+      <div class="progress-label" id="progressLabel">Encoding...</div>
+      <div class="progress-bar-outer">
+        <div class="progress-bar-inner" id="progressBar"></div>
+      </div>
+    </div>
+
+    <div id="resultsSection" style="display:none; flex-direction:column; gap:18px;">
+      <div class="results-header">
+        <span class="results-title">Generated Sequence</span>
+        <span class="badge" id="totalBadge">0 barcodes</span>
+      </div>
       <div class="barcode-nav">
-        <button class="nav-prev" onclick="prevBarcode()">&#8592; Prev</button>
+        <button class="btn nav-prev" onclick="prevBarcode()">&#8592; Prev</button>
         <span class="barcode-counter">Barcode <span id="cur-idx">1</span> of <span id="total-count">1</span></span>
-        <button class="nav-next" onclick="nextBarcode()">Next &#8594;</button>
+        <button class="btn nav-next" onclick="nextBarcode()">Next &#8594;</button>
       </div>
       <div class="barcode-display">
         <img id="barcode-img" src="" alt="barcode">
       </div>
       <div class="seq-label" id="seq-label"></div>
     </div>
+
   </div>
-</div>
+</main>
+
+<footer>
+  <span id="footer-format">PDF417 // security level 2</span>
+  <span id="footer-chunk">chunk size: 1180 chars</span>
+  <span>format: PNG base64</span>
+  <span>sparky // 192.168.1.218:8888</span>
+</footer>
 
 <script>
   let barcodes = [];
   let currentIdx = 0;
 
-  // Scale slider
-  const scaleSlider = document.getElementById('scale');
-  const scaleVal = document.getElementById('scale-val');
-  scaleSlider.addEventListener('input', () => { scaleVal.textContent = scaleSlider.value; });
+  // ── Live stats update ──
+  const inputText  = document.getElementById('inputText');
+  const charCountEl = document.getElementById('charCount');
+  const chunkCountEl = document.getElementById('chunkCount');
 
-  // Format toggle: show/hide QR options, update chunk size default
+  function getChunkSize() {
+    return parseInt(document.getElementById('chunk-size').value) || 1180;
+  }
+
+  inputText.addEventListener('input', updateLiveStats);
+  document.getElementById('chunk-size').addEventListener('input', updateLiveStats);
+
+  function updateLiveStats() {
+    const text = inputText.value;
+    const cs = getChunkSize();
+    charCountEl.textContent = text.length.toLocaleString();
+    chunkCountEl.textContent = text.length > 0 ? Math.ceil(text.length / cs) : 0;
+  }
+
+  // ── Scale slider ──
+  const scaleSlider = document.getElementById('scale');
+  const scaleValEl = document.getElementById('scale-val');
+  scaleSlider.addEventListener('input', () => { scaleValEl.textContent = scaleSlider.value; });
+
+  // ── Format toggle ──
   document.querySelectorAll('input[name="format"]').forEach(r => {
     r.addEventListener('change', () => {
       const isQR = r.value === 'qr';
       document.getElementById('qr-options').style.display = isQR ? 'block' : 'none';
-      // Suggest sensible default chunk sizes
       const chunkInput = document.getElementById('chunk-size');
-      if (isQR && chunkInput.value > 800) chunkInput.value = 800;
-      if (!isQR && chunkInput.value < 1180) chunkInput.value = 1180;
+      if (isQR && parseInt(chunkInput.value) > 800) chunkInput.value = 800;
+      if (!isQR && parseInt(chunkInput.value) < 1180) chunkInput.value = 1180;
+      updateLiveStats();
     });
   });
 
+  // ── Generate ──
   async function generate() {
-    const text = document.getElementById('text-input').value.trim();
-    if (!text) { setError('Please paste some text first.'); return; }
-    clearError();
+    const text = inputText.value.trim();
+    if (!text) { showError('Please paste some text first.'); return; }
+    hideError();
 
     const format = document.querySelector('input[name="format"]:checked').value;
-    const chunkSize = parseInt(document.getElementById('chunk-size').value) || 1180;
-    const scale = parseInt(document.getElementById('scale').value);
+    const chunkSize = getChunkSize();
+    const scale = parseInt(scaleSlider.value);
     const qrEcc = document.getElementById('qr-ecc').value;
 
-    const btn = document.getElementById('generate-btn');
+    const btn = document.getElementById('encodeBtn');
     btn.disabled = true;
-    btn.textContent = 'Generating...';
+
+    // Show progress
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('resultsSection').style.display = 'none';
+    const progressWrap = document.getElementById('progressWrap');
+    progressWrap.style.display = 'flex';
+    document.getElementById('progressBar').style.width = '0%';
+    document.getElementById('progressLabel').textContent = 'Sending request...';
 
     try {
       const resp = await fetch('/generate', {
@@ -412,32 +615,40 @@ HTML = """<!DOCTYPE html>
         body: JSON.stringify({ text, format, chunk_size: chunkSize, scale, qr_ecc: qrEcc })
       });
       const data = await resp.json();
-      if (data.error) { setError(data.error); return; }
+      if (data.error) { showError(data.error); progressWrap.style.display = 'none'; return; }
 
       barcodes = data.barcodes;
       currentIdx = 0;
-      showBarcode(0);
 
-      const charCount = text.length;
-      document.getElementById('stats').innerHTML =
-        `chars: <span>${charCount.toLocaleString()}</span> &nbsp;|&nbsp; ` +
-        `chunks: <span>${barcodes.length}</span> &nbsp;|&nbsp; ` +
-        `format: <span>${format.toUpperCase()}</span> &nbsp;|&nbsp; ` +
-        `chunk size: <span>${chunkSize}</span>`;
+      document.getElementById('progressBar').style.width = '100%';
+      document.getElementById('progressLabel').textContent =
+        `Done — ${barcodes.length} barcode${barcodes.length !== 1 ? 's' : ''} generated`;
+
+      setTimeout(() => {
+        progressWrap.style.display = 'none';
+        const rs = document.getElementById('resultsSection');
+        rs.style.display = 'flex';
+        document.getElementById('totalBadge').textContent =
+          `${barcodes.length} barcode${barcodes.length !== 1 ? 's' : ''}`;
+        showBarcode(0);
+      }, 350);
+
+      // Update footer
+      document.getElementById('footer-format').textContent =
+        format === 'qr' ? `QR Code // ECC ${qrEcc}` : 'PDF417 // security level 2';
+      document.getElementById('footer-chunk').textContent = `chunk size: ${chunkSize} chars`;
 
     } catch (e) {
-      setError('Request failed: ' + e.message);
+      showError('Request failed: ' + e.message);
+      progressWrap.style.display = 'none';
     } finally {
       btn.disabled = false;
-      btn.textContent = 'Generate Barcodes';
     }
   }
 
   function showBarcode(idx) {
     if (!barcodes.length) return;
     const b = barcodes[idx];
-    document.getElementById('placeholder').style.display = 'none';
-    document.getElementById('barcode-area').style.display = 'block';
     document.getElementById('barcode-img').src = 'data:image/png;base64,' + b.image;
     document.getElementById('seq-label').textContent = b.header;
     document.getElementById('cur-idx').textContent = idx + 1;
@@ -455,11 +666,30 @@ HTML = """<!DOCTYPE html>
   // Keyboard navigation
   document.addEventListener('keydown', e => {
     if (e.key === 'ArrowRight' || e.key === 'ArrowDown') nextBarcode();
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') prevBarcode();
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   prevBarcode();
   });
 
-  function setError(msg) { document.getElementById('error-msg').textContent = msg; }
-  function clearError() { document.getElementById('error-msg').textContent = ''; }
+  // ── Clear ──
+  function clearAll() {
+    inputText.value = '';
+    charCountEl.textContent  = '0';
+    chunkCountEl.textContent = '0';
+    barcodes = [];
+    currentIdx = 0;
+    document.getElementById('resultsSection').style.display = 'none';
+    document.getElementById('progressWrap').style.display   = 'none';
+    document.getElementById('emptyState').style.display     = 'flex';
+    hideError();
+  }
+
+  function showError(msg) {
+    const box = document.getElementById('errorBox');
+    box.textContent = msg;
+    box.style.display = 'block';
+  }
+  function hideError() {
+    document.getElementById('errorBox').style.display = 'none';
+  }
 </script>
 </body>
 </html>
