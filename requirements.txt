@@ -2,3 +2,4 @@ jupyterlab>3.0
 flask
 pillow
 qrcode
+pdf417gen
